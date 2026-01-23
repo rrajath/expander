@@ -22,6 +22,11 @@ A fully functional Android text expansion app that works system-wide using Acces
 - `{{date}}` - Current date (yyyy-MM-dd)
 - `{{time}}` - Current time (HH:mm:ss)
 - `{{datetime}}` - Date and time
+- `{{day}}` - Day of week (short form: Mon, Tue, Wed)
+- `{{day_long}}` - Day of week (long form: Monday, Tuesday, Wednesday)
+- `{{month}}` - Month (short form: Jan, Feb, Mar)
+- `{{month_long}}` - Month (long form: January, February, March)
+- `{{year}}` - Full year (e.g., 2026)
 - `{{date:format}}` - Custom date format (e.g., `{{date:dd/MM/yyyy}}`)
 - `{{time:format}}` - Custom time format (e.g., `{{time:hh:mm a}}`)
 
@@ -39,6 +44,7 @@ A fully functional Android text expansion app that works system-wide using Acces
 - **Global enable/disable toggle** for the expansion service
 - **Swipe-to-delete** with confirmation dialog
 - **Empty states** with helpful messages
+- **Backspace undo** - Press backspace after expansion to revert to original trigger word
 
 ## Architecture
 
@@ -122,6 +128,11 @@ After installing the app:
    - Removes trigger + space from text field
    - Inserts expanded text using `ACTION_SET_TEXT`
    - Moves cursor to end of expanded text
+   - Saves expansion history for undo
+5. **On Backspace after expansion**, service:
+   - Detects if user pressed backspace immediately after expansion
+   - Reverts text back to the original trigger word
+   - Clears undo history
 
 ### Dynamic Snippet Processing
 - Regex pattern `\{\{([^}]+)\}\}` detects placeholders
@@ -143,13 +154,20 @@ Expansion: 123 Main Street
 ### Dynamic Snippets
 ```
 Trigger: !today
-Expansion: Today is {{date}}
+Expansion: Today is {{day_long}}, {{month_long}} {{date:d}}, {{year}}
+Output: Today is Wednesday, January 22, 2026
 
 Trigger: !meeting
 Expansion: Meeting scheduled for {{date:EEEE, MMMM d}} at {{time:h:mm a}}
+Output: Meeting scheduled for Wednesday, January 22 at 3:45 PM
 
 Trigger: !log
 Expansion: [{{datetime}}] Log entry:
+Output: [2026-01-22 15:45:30] Log entry:
+
+Trigger: !header
+Expansion: ## {{day}}, {{month}} {{date:d}}
+Output: ## Wed, Jan 22
 ```
 
 ## Import/Export

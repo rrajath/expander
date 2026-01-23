@@ -14,6 +14,11 @@ object SnippetProcessor {
      * - {{date}} - Current date in yyyy-MM-dd format
      * - {{time}} - Current time in HH:mm:ss format
      * - {{datetime}} - Current date and time in yyyy-MM-dd HH:mm:ss format
+     * - {{day}} - Day of week (short form, e.g., Mon, Tue)
+     * - {{day_long}} - Day of week (long form, e.g., Monday, Tuesday)
+     * - {{month}} - Month (short form, e.g., Jan, Feb)
+     * - {{month_long}} - Month (long form, e.g., January, February)
+     * - {{year}} - Full year (e.g., 2026)
      * - {{date:format}} - Custom date format (e.g., {{date:dd/MM/yyyy}})
      * - {{time:format}} - Custom time format (e.g., {{time:hh:mm a}})
      */
@@ -28,6 +33,11 @@ object SnippetProcessor {
                 content == "date" -> getCurrentDate()
                 content == "time" -> getCurrentTime()
                 content == "datetime" -> getCurrentDateTime()
+                content == "day" -> getDayShort()
+                content == "day_long" -> getDayLong()
+                content == "month" -> getMonthShort()
+                content == "month_long" -> getMonthLong()
+                content == "year" -> getYear()
                 content.startsWith("date:") -> {
                     val format = content.substring(5).trim()
                     formatCurrentDate(format)
@@ -71,5 +81,25 @@ object SnippetProcessor {
         } catch (e: Exception) {
             "{{time:$format}}" // Return original if format is invalid
         }
+    }
+
+    private fun getDayShort(): String {
+        return SimpleDateFormat("EEE", Locale.getDefault()).format(Date())
+    }
+
+    private fun getDayLong(): String {
+        return SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
+    }
+
+    private fun getMonthShort(): String {
+        return SimpleDateFormat("MMM", Locale.getDefault()).format(Date())
+    }
+
+    private fun getMonthLong(): String {
+        return SimpleDateFormat("MMMM", Locale.getDefault()).format(Date())
+    }
+
+    private fun getYear(): String {
+        return SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
     }
 }

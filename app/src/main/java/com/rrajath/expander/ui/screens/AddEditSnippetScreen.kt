@@ -122,6 +122,11 @@ fun AddEditSnippetScreen(
                             • {{date}} - Current date (yyyy-MM-dd)
                             • {{time}} - Current time (HH:mm:ss)
                             • {{datetime}} - Date and time
+                            • {{day}} - Day (Mon, Tue, Wed)
+                            • {{day_long}} - Day (Monday, Tuesday)
+                            • {{month}} - Month (Jan, Feb, Mar)
+                            • {{month_long}} - Month (January, February)
+                            • {{year}} - Year (2026)
                             • {{date:dd/MM/yyyy}} - Custom format
                         """.trimIndent(),
                         style = MaterialTheme.typography.bodySmall,

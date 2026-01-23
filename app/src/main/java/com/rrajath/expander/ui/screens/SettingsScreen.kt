@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rrajath.expander.service.TextExpansionService
+import com.rrajath.expander.util.ThemeMode
+import com.rrajath.expander.util.ThemePreferences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,10 +23,26 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
+    onThemeChanged: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var serviceEnabled by remember { mutableStateOf(TextExpansionService.isServiceEnabled(context)) }
+    var currentTheme by remember { mutableStateOf(ThemePreferences.getThemeMode(context)) }
+    var showThemeDialog by remember { mutableStateOf(false) }
+
+    if (showThemeDialog) {
+        ThemeSelectionDialog(
+            currentTheme = currentTheme,
+            onDismiss = { showThemeDialog = false },
+            onThemeSelected = { theme ->
+                currentTheme = theme
+                ThemePreferences.setThemeMode(context, theme)
+                onThemeChanged()
+                showThemeDialog = false
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -99,6 +117,25 @@ fun SettingsScreen(
                     val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                     context.startActivity(intent)
                 }
+            )
+
+            Divider()
+
+            // Appearance Section
+            Text(
+                text = "Appearance",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            SettingsItem(
+                title = "Theme",
+                subtitle = when (currentTheme) {
+                    ThemeMode.LIGHT -> "Light"
+                    ThemeMode.DARK -> "Dark"
+                    ThemeMode.SYSTEM -> "System default"
+                },
+                onClick = { showThemeDialog = true }
             )
 
             Divider()
@@ -192,5 +229,66 @@ fun SettingsItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+fun ThemeSelectionDialog(
+    currentTheme: ThemeMode,
+    onDismiss: () -> Unit,
+    onThemeSelected: (ThemeMode) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Choose Theme") },
+        text = {
+            Column {
+                ThemeOption(
+                    title = "Light",
+                    selected = currentTheme == ThemeMode.LIGHT,
+                    onClick = { onThemeSelected(ThemeMode.LIGHT) }
+                )
+                ThemeOption(
+                    title = "Dark",
+                    selected = currentTheme == ThemeMode.DARK,
+                    onClick = { onThemeSelected(ThemeMode.DARK) }
+                )
+                ThemeOption(
+                    title = "System default",
+                    selected = currentTheme == ThemeMode.SYSTEM,
+                    onClick = { onThemeSelected(ThemeMode.SYSTEM) }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun ThemeOption(
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }

@@ -22,6 +22,15 @@ class TextExpansionService : AccessibilityService() {
     private var snippetsCache: List<Snippet> = emptyList()
     private var lastProcessedText = ""
 
+    // Undo tracking
+    private var lastExpansion: ExpansionHistory? = null
+
+    private data class ExpansionHistory(
+        val trigger: String,
+        val expansion: String,
+        val textBeforeTrigger: String
+    )
+
     companion object {
         private const val PREFS_NAME = "expander_prefs"
         private const val KEY_SERVICE_ENABLED = "service_enabled"
@@ -65,6 +74,14 @@ class TextExpansionService : AccessibilityService() {
         try {
             val currentText = source.text?.toString() ?: ""
 
+            // Check for backspace undo
+            if (shouldUndoExpansion(currentText)) {
+                undoExpansion(source)
+                lastProcessedText = currentText
+                source.recycle()
+                return
+            }
+
             // Check if text ends with a space (trigger for expansion)
             if (currentText.endsWith(" ") && currentText.isNotEmpty()) {
                 processTextForExpansion(source, currentText)
@@ -75,6 +92,46 @@ class TextExpansionService : AccessibilityService() {
             // Silently handle errors to avoid service crashes
         } finally {
             source.recycle()
+        }
+    }
+
+    private fun shouldUndoExpansion(currentText: String): Boolean {
+        val history = lastExpansion ?: return false
+
+        // Check if user deleted one character from the expanded text
+        val expectedTextAfterBackspace = history.textBeforeTrigger + history.expansion.dropLast(1)
+        return currentText == expectedTextAfterBackspace
+    }
+
+    private fun undoExpansion(source: AccessibilityNodeInfo) {
+        val history = lastExpansion ?: return
+
+        try {
+            // Restore the original trigger text
+            val restoredText = history.textBeforeTrigger + history.trigger
+
+            val arguments = Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, restoredText)
+            }
+
+            source.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+
+            // Move cursor to the end
+            arguments.clear()
+            arguments.putInt(
+                AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT,
+                restoredText.length
+            )
+            arguments.putInt(
+                AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT,
+                restoredText.length
+            )
+            source.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, arguments)
+
+            // Clear the undo history after using it
+            lastExpansion = null
+        } catch (e: Exception) {
+            // Silently handle errors
         }
     }
 
@@ -107,6 +164,13 @@ class TextExpansionService : AccessibilityService() {
             // Remove the trigger word and the trailing space
             val textBeforeTrigger = currentText.dropLast(trigger.length + 1)
             val newText = textBeforeTrigger + expansion
+
+            // Save expansion history for undo
+            lastExpansion = ExpansionHistory(
+                trigger = trigger,
+                expansion = expansion,
+                textBeforeTrigger = textBeforeTrigger
+            )
 
             // Set the new text using ACTION_SET_TEXT
             val arguments = Bundle().apply {
