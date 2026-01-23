@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew tasks --quiet)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
