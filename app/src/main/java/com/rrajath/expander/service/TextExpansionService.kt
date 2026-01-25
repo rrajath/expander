@@ -144,7 +144,7 @@ class TextExpansionService : AccessibilityService() {
 
         // Check if this word matches any trigger
         val matchingSnippet = snippetsCache.firstOrNull { snippet ->
-            snippet.trigger.equals(lastWord, ignoreCase = false)
+            snippet.trigger.equals(lastWord, ignoreCase = true)
         } ?: return
 
         // Process dynamic placeholders
