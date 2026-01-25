@@ -26,6 +26,7 @@
         <!-- Text Expansion Accessibility Service -->
         <service
             android:name=".service.TextExpansionService"
+            android:directBootAware="true"
             android:exported="false"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>

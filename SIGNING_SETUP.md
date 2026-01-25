@@ -85,6 +85,24 @@ Go to the "Actions" tab on GitHub to see the release workflow running. Once comp
 - ⚠️ Keep backups of your keystore in a secure location
 - ⚠️ Never share your keystore or passwords publicly
 
+## Important: Accessibility Service Persistence
+
+**Why consistent signing matters:**
+
+Android disables accessibility services when it detects an app update from a different source or with a different signature. To minimize disruptions:
+
+1. **Always use the same keystore** for all releases
+2. **Never switch between signed and unsigned** APKs
+3. **Use GitHub Actions for releases** - ensures consistent signing
+4. **Don't mix debug and release** builds on the same device
+
+With consistent signing:
+- ✅ Snippets and settings are preserved
+- ✅ App recognizes previous installation
+- ⚠️ Accessibility service still requires re-enabling (Android security policy)
+
+See `ACCESSIBILITY_SERVICE_GUIDE.md` for details on why re-enabling is required after updates.
+
 ## Troubleshooting
 
 **"Keystore not found" error locally:**

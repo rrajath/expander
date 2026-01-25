@@ -46,6 +46,19 @@ class TextExpansionService : AccessibilityService() {
                 .putBoolean(KEY_SERVICE_ENABLED, enabled)
                 .apply()
         }
+
+        /**
+         * Checks if the accessibility service is actually enabled in system settings.
+         * This is different from isServiceEnabled which only checks our internal preference.
+         */
+        fun isAccessibilityServiceEnabled(context: Context): Boolean {
+            val expectedComponentName = "${context.packageName}/${TextExpansionService::class.java.name}"
+            val enabledServices = android.provider.Settings.Secure.getString(
+                context.contentResolver,
+                android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+            return enabledServices?.contains(expectedComponentName) == true
+        }
     }
 
     override fun onCreate() {

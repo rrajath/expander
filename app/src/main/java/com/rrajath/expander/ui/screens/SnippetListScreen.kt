@@ -1,5 +1,7 @@
 package com.rrajath.expander.ui.screens
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -11,9 +13,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rrajath.expander.data.Snippet
+import com.rrajath.expander.service.TextExpansionService
 import com.rrajath.expander.ui.components.EmptyState
 import com.rrajath.expander.ui.components.SearchBar
 
@@ -56,6 +60,18 @@ fun SnippetListScreen(
             }
         }
     ) { paddingValues ->
+        val context = LocalContext.current
+        var isAccessibilityEnabled by remember { mutableStateOf(TextExpansionService.isAccessibilityServiceEnabled(context)) }
+        var showWarningBanner by remember { mutableStateOf(!isAccessibilityEnabled) }
+
+        // Recheck when the screen resumes
+        DisposableEffect(Unit) {
+            onDispose {
+                isAccessibilityEnabled = TextExpansionService.isAccessibilityServiceEnabled(context)
+                showWarningBanner = !isAccessibilityEnabled
+            }
+        }
+
         Column(
             modifier = modifier
                 .fillMaxSize()
@@ -63,6 +79,54 @@ fun SnippetListScreen(
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Accessibility Service Warning Banner
+            if (showWarningBanner) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Accessibility Service Disabled",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text = "Text expansion won't work. Enable it in Settings.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Enable")
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             SearchBar(
                 query = searchQuery,
