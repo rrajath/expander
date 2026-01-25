@@ -1,11 +1,10 @@
-name: Build APKs
+name: Build APKs (PR & Dev)
 
 on:
   push:
     branches:
-      - main
-      - master
       - develop
+      - dev
   pull_request:
     branches:
       - main

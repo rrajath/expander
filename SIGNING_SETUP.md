@@ -66,14 +66,16 @@ Go to your GitHub repository:
 
 ### Step 3: Test the workflow
 
-Push code to your repository:
+Push code to your main branch:
 ```bash
 git add .
 git commit -m "Set up APK signing"
-git push
+git push origin main
 ```
 
-Go to the "Actions" tab on GitHub to see the workflow running. Once complete, you can download the signed APK from the artifacts section.
+Go to the "Actions" tab on GitHub to see the release workflow running. Once complete:
+- A new GitHub release will be created with the signed APKs attached
+- You can download the APKs from the "Releases" section
 
 ## Security Notes
 
