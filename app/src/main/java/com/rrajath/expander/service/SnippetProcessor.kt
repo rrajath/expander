@@ -19,6 +19,8 @@ object SnippetProcessor {
      * - {{month}} - Month (short form, e.g., Jan, Feb)
      * - {{month_long}} - Month (long form, e.g., January, February)
      * - {{year}} - Full year (e.g., 2026)
+     * - {{year_short}} - Two-digit year (e.g., 26)
+     * - {{week_num}} - Week number (e.g., 3)
      * - {{date:format}} - Custom date format (e.g., {{date:dd/MM/yyyy}})
      * - {{time:format}} - Custom time format (e.g., {{time:hh:mm a}})
      */
@@ -38,6 +40,8 @@ object SnippetProcessor {
                 content == "month" -> getMonthShort()
                 content == "month_long" -> getMonthLong()
                 content == "year" -> getYear()
+                content == "year_short" -> getYearShort()
+                content == "week_num" -> getWeekNum()
                 content.startsWith("date:") -> {
                     val format = content.substring(5).trim()
                     formatCurrentDate(format)
@@ -101,5 +105,13 @@ object SnippetProcessor {
 
     private fun getYear(): String {
         return SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
+    }
+
+    private fun getYearShort(): String {
+        return SimpleDateFormat("yy", Locale.getDefault()).format(Date())
+    }
+
+    private fun getWeekNum(): String {
+        return SimpleDateFormat("w", Locale.getDefault()).format(Date())
     }
 }

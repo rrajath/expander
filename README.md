@@ -54,6 +54,8 @@ Expander supports dynamic placeholders that are replaced with real-time values:
 | `{{month}}` | Jan | Month (short) |
 | `{{month_long}}` | January | Month (full) |
 | `{{year}}` | 2026 | Full year |
+| `{{year_short}}` | 26 | Two-digit year |
+| `{{week_num}}` | 3 | Week number |
 | `{{date:format}}` | 22/01/2026 | Custom date format |
 | `{{time:format}}` | 3:45 PM | Custom time format |
 
