@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew tasks --quiet)"
+      "Bash(./gradlew tasks --quiet)",
+      "Read(//Users/rrajath/Downloads/**)",
+      "Bash(convert:*)",
+      "Bash(cwebp:*)"
     ],
     "deny": [],
     "ask": []
