@@ -152,6 +152,14 @@ Output: ## Wed, Jan 22, 2026
 Trigger: !blog
 Expansion: Published on {{month_long}} {{date:d}}, {{year}} by {{author}}
 Output: Published on January 22, 2026 by {{author}}
+
+Trigger: !version
+Expansion: v{{year_short}}.{{week_num}}.{{date:dd}}
+Output: v26.03.22
+
+Trigger: !week
+Expansion: Week {{week_num}} of {{year}}
+Output: Week 3 of 2026
 ```
 
 ### Custom Date Formats

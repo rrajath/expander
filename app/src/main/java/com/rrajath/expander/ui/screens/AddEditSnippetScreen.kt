@@ -127,6 +127,8 @@ fun AddEditSnippetScreen(
                             • {{month}} - Month (Jan, Feb, Mar)
                             • {{month_long}} - Month (January, February)
                             • {{year}} - Year (2026)
+                            • {{year_short}} - Year (26)
+                            • {{week_num}} - Week number (1-52)
                             • {{date:dd/MM/yyyy}} - Custom format
                         """.trimIndent(),
                         style = MaterialTheme.typography.bodySmall,
