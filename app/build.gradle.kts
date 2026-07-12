@@ -47,6 +47,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Distinct applicationId so a debug build from Android Studio can be
+            // installed side-by-side with the CI-signed release build on the same device.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
