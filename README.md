@@ -72,6 +72,7 @@ Expander supports dynamic placeholders that are replaced with real-time values:
 - **Global Toggle** - Enable/disable the expansion service from Settings
 - **Accessibility Service Integration** - Seamless system-wide text monitoring
 - **Instant Updates** - No app restart needed for changes
+- **Create Shortcut from Selection** - Select text in any app and tap "Create a Shortcut" in the text-selection menu to open the Add Snippet screen with the selection prefilled as the expansion
 
 ## 📱 Screenshots
 

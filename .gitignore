@@ -33,9 +33,11 @@ google-services.json
 
 # Android Profiling
 *.hprof
-+*.iml
-+.DS_Store
-+/build
-+/captures
-+.externalNativeBuild
-+.cxx
+
+# OS files
+.DS_Store
+
+# Local tool state
+.serena/
+
+PROGRESS.md

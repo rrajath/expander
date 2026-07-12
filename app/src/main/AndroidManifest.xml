@@ -23,6 +23,19 @@
             </intent-filter>
         </activity>
 
+        <!-- Text-selection menu entry: "Create a Shortcut" -->
+        <activity-alias
+            android:name=".CreateShortcutActivity"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:label="@string/create_shortcut_menu_label">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Text Expansion Accessibility Service -->
         <service
             android:name=".service.TextExpansionService"

@@ -21,7 +21,14 @@ import android.widget.Toast
 
 sealed class Screen(val route: String) {
     object SnippetList : Screen("snippet_list")
-    object AddSnippet : Screen("add_snippet")
+    object AddSnippet : Screen("add_snippet?prefillExpansion={prefillExpansion}") {
+        fun createRoute(prefillExpansion: String? = null): String =
+            if (prefillExpansion == null) {
+                "add_snippet"
+            } else {
+                "add_snippet?prefillExpansion=${Uri.encode(prefillExpansion)}"
+            }
+    }
     object EditSnippet : Screen("edit_snippet/{snippetId}") {
         fun createRoute(snippetId: Long) = "edit_snippet/$snippetId"
     }
@@ -31,8 +38,18 @@ sealed class Screen(val route: String) {
 @Composable
 fun NavGraph(
     navController: NavHostController,
+    initialExpansion: String? = null,
     viewModel: SnippetViewModel = viewModel()
 ) {
+    // Navigate to Add Snippet when launched via ACTION_PROCESS_TEXT.
+    // MainActivity gets a fresh instance per PROCESS_TEXT launch, so firing
+    // once per composition is fine.
+    LaunchedEffect(Unit) {
+        if (initialExpansion != null) {
+            navController.navigate(Screen.AddSnippet.createRoute(initialExpansion))
+        }
+    }
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -94,7 +111,7 @@ fun NavGraph(
                 onSnippetDelete = viewModel::deleteSnippet,
                 onSnippetToggle = viewModel::toggleSnippetEnabled,
                 onAddClick = {
-                    navController.navigate(Screen.AddSnippet.route)
+                    navController.navigate(Screen.AddSnippet.createRoute())
                 },
                 onSettingsClick = {
                     navController.navigate(Screen.Settings.route)
@@ -102,9 +119,20 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.AddSnippet.route) {
+        composable(
+            route = Screen.AddSnippet.route,
+            arguments = listOf(
+                navArgument("prefillExpansion") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val prefillExpansion = backStackEntry.arguments?.getString("prefillExpansion")
             AddEditSnippetScreen(
                 snippet = null,
+                initialExpansion = prefillExpansion,
                 onSave = { trigger, expansion ->
                     viewModel.insertSnippet(trigger, expansion) {
                         navController.popBackStack()

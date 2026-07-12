@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Expander</string>
+    <string name="create_shortcut_menu_label">Create a Shortcut</string>
     <string name="accessibility_service_description">Expander monitors text input to automatically expand shortcut triggers into full text. This service requires access to text fields across all apps to detect and replace your configured shortcuts.</string>
 </resources>

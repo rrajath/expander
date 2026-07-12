@@ -17,10 +17,11 @@ fun AddEditSnippetScreen(
     snippet: Snippet?,
     onSave: (String, String) -> Unit,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialExpansion: String? = null
 ) {
     var trigger by remember { mutableStateOf(snippet?.trigger ?: "") }
-    var expansion by remember { mutableStateOf(snippet?.expansion ?: "") }
+    var expansion by remember { mutableStateOf(snippet?.expansion ?: initialExpansion ?: "") }
     var triggerError by remember { mutableStateOf<String?>(null) }
     var expansionError by remember { mutableStateOf<String?>(null) }
 

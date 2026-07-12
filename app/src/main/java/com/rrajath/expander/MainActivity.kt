@@ -1,5 +1,6 @@
 package com.rrajath.expander
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.rememberNavController
 import com.rrajath.expander.ui.navigation.NavGraph
 import com.rrajath.expander.ui.theme.ExpanderTheme
+import com.rrajath.expander.util.ProcessTextHelper
 import com.rrajath.expander.util.ThemeMode
 import com.rrajath.expander.util.ThemePreferences
 
@@ -17,6 +19,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ThemePreferences.init(this)
         enableEdgeToEdge()
+
+        val initialExpansion = ProcessTextHelper.extractSelectedText(
+            intent?.action,
+            intent?.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)
+        )
+
         setContent {
             val themeMode by ThemePreferences.themeMode.collectAsState()
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -29,7 +37,10 @@ class MainActivity : ComponentActivity() {
 
             ExpanderTheme(darkTheme = darkTheme) {
                 val navController = rememberNavController()
-                NavGraph(navController = navController)
+                NavGraph(
+                    navController = navController,
+                    initialExpansion = initialExpansion
+                )
             }
         }
     }
