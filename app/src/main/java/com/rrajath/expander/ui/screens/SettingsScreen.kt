@@ -28,6 +28,8 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     var serviceEnabled by remember { mutableStateOf(TextExpansionService.isServiceEnabled(context)) }
+    var smartPunctuationEnabled by remember { mutableStateOf(TextExpansionService.isSmartPunctuationEnabled(context)) }
+    var smartPunctuationChars by remember { mutableStateOf(TextExpansionService.getSmartPunctuationCharsRaw(context)) }
     var currentTheme by remember { mutableStateOf(ThemePreferences.getThemeMode(context)) }
     var showThemeDialog by remember { mutableStateOf(false) }
 
@@ -106,6 +108,55 @@ fun SettingsScreen(
                             }
                         )
                     }
+                }
+            }
+
+            // Smart Punctuation Spacing Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Smart Punctuation Spacing",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "Fixes \"you ? \" to \"you? \" when punctuation is typed after a space",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                        Switch(
+                            checked = smartPunctuationEnabled,
+                            onCheckedChange = {
+                                smartPunctuationEnabled = it
+                                TextExpansionService.setSmartPunctuationEnabled(context, it)
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = smartPunctuationChars,
+                        onValueChange = {
+                            smartPunctuationChars = it
+                            TextExpansionService.setSmartPunctuationCharsRaw(context, it)
+                        },
+                        enabled = smartPunctuationEnabled,
+                        label = { Text("Punctuation (space-separated)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 

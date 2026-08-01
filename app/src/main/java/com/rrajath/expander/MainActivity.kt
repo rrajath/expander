@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
 import com.rrajath.expander.ui.navigation.NavGraph
 import com.rrajath.expander.ui.theme.ExpanderTheme
@@ -33,6 +35,17 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
                 ThemeMode.SYSTEM -> systemInDarkTheme
+            }
+
+            // enableEdgeToEdge() only sets the status/nav bar icon style once, based on the
+            // system theme at launch. It doesn't react to the in-app Light/Dark/System choice,
+            // so forcing Light theme while the system is in Dark mode left white (unreadable)
+            // status bar icons over the light background. Keep it in sync with darkTheme instead.
+            val view = LocalView.current
+            SideEffect {
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = !darkTheme
+                insetsController.isAppearanceLightNavigationBars = !darkTheme
             }
 
             ExpanderTheme(darkTheme = darkTheme) {

@@ -34,6 +34,14 @@ class TextExpansionService : AccessibilityService() {
     companion object {
         private const val PREFS_NAME = "expander_prefs"
         private const val KEY_SERVICE_ENABLED = "service_enabled"
+        private const val KEY_SMART_PUNCTUATION_ENABLED = "smart_punctuation_enabled"
+        private const val KEY_SMART_PUNCTUATION_CHARS = "smart_punctuation_chars"
+
+        // Punctuation that should never have a space before it. If the keyboard's
+        // symbol popup inserts one of these after a trailing space, the space is
+        // removed and moved to after the punctuation instead. User-configurable via
+        // Settings as a space-separated string; this is only the default.
+        const val DEFAULT_SMART_PUNCTUATION_CHARS = "? ! , . ; : ) \" ' ] } ` ~"
 
         fun isServiceEnabled(context: Context): Boolean {
             return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -45,6 +53,40 @@ class TextExpansionService : AccessibilityService() {
                 .edit()
                 .putBoolean(KEY_SERVICE_ENABLED, enabled)
                 .apply()
+        }
+
+        fun isSmartPunctuationEnabled(context: Context): Boolean {
+            return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(KEY_SMART_PUNCTUATION_ENABLED, true)
+        }
+
+        fun setSmartPunctuationEnabled(context: Context, enabled: Boolean) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_SMART_PUNCTUATION_ENABLED, enabled)
+                .apply()
+        }
+
+        /** Raw, space-separated string as edited by the user (may contain in-progress typing). */
+        fun getSmartPunctuationCharsRaw(context: Context): String {
+            return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getString(KEY_SMART_PUNCTUATION_CHARS, DEFAULT_SMART_PUNCTUATION_CHARS)
+                ?: DEFAULT_SMART_PUNCTUATION_CHARS
+        }
+
+        fun setSmartPunctuationCharsRaw(context: Context, raw: String) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_SMART_PUNCTUATION_CHARS, raw)
+                .apply()
+        }
+
+        /** Parses the raw space-separated string into single-character tokens, ignoring the rest. */
+        fun parseSmartPunctuationChars(raw: String): Set<Char> {
+            return raw.split(" ", "\t", "\n")
+                .filter { it.length == 1 }
+                .map { it[0] }
+                .toSet()
         }
 
         /**
@@ -97,7 +139,9 @@ class TextExpansionService : AccessibilityService() {
 
             // Check if text ends with a space (trigger for expansion)
             if (currentText.endsWith(" ") && currentText.isNotEmpty()) {
-                processTextForExpansion(source, currentText)
+                if (!applySmartPunctuationSpacing(source, currentText)) {
+                    processTextForExpansion(source, currentText)
+                }
             }
 
             lastProcessedText = currentText
@@ -146,6 +190,32 @@ class TextExpansionService : AccessibilityService() {
         } catch (e: Exception) {
             // Silently handle errors
         }
+    }
+
+    /**
+     * Fixes text like "how are you ? " (space typed before punctuation, e.g. via the
+     * keyboard's long-press symbol popup) into "how are you? " by moving the space(s)
+     * from before the punctuation to after it. Returns true if a fix was applied.
+     */
+    private fun applySmartPunctuationSpacing(source: AccessibilityNodeInfo, text: String): Boolean {
+        if (!isSmartPunctuationEnabled(this)) return false
+
+        val beforeTrailingSpace = text.dropLast(1)
+        val punct = beforeTrailingSpace.lastOrNull() ?: return false
+        val punctuationChars = parseSmartPunctuationChars(getSmartPunctuationCharsRaw(this))
+        if (punct !in punctuationChars) return false
+
+        val punctIndex = beforeTrailingSpace.length - 1
+        var spaceStart = punctIndex
+        while (spaceStart > 0 && beforeTrailingSpace[spaceStart - 1] == ' ') spaceStart--
+        val spacesBeforePunct = punctIndex - spaceStart
+        if (spacesBeforePunct == 0) return false
+
+        val trigger = " ".repeat(spacesBeforePunct) + punct
+        val expansion = "$punct "
+
+        expandText(source, text, trigger, expansion)
+        return true
     }
 
     private fun processTextForExpansion(source: AccessibilityNodeInfo, text: String) {
