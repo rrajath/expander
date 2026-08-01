@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Snippet is serialized to/from JSON by Gson (ImportExportManager) using
+# field-name reflection, so its fields must survive shrinking/obfuscation.
+-keep class com.rrajath.expander.data.Snippet { *; }
