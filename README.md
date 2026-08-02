@@ -59,6 +59,23 @@ Expander supports dynamic placeholders that are replaced with real-time values:
 | `{{date:format}}` | 22/01/2026 | Custom date format |
 | `{{time:format}}` | 3:45 PM | Custom time format |
 
+Any date-based placeholder above (`date`, `datetime`, `day`, `day_long`, `month`, `month_long`, `year`, `year_short`, `week_num`) can be offset by appending a signed amount and a unit letter right after its name, before the optional format:
+
+| Unit | Meaning |
+|------|---------|
+| `d` | Days |
+| `w` | Weeks |
+| `m` | Months |
+| `y` | Years |
+
+| Example | Description |
+|---------|-------------|
+| `{{date+3d}}` | Date 3 days from now |
+| `{{date-2w}}` | Date 2 weeks ago |
+| `{{date+1m}}` | Date 1 month from now |
+| `{{date+1y:dd/MM/yyyy}}` | Date 1 year from now, custom format |
+| `{{day_long+7d}}` | Weekday name a week from now |
+
 ### 💾 Data Management
 
 - **Persistent Database** - All snippets stored locally using Room

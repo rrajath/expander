@@ -6,6 +6,11 @@ version tags.
 
 ## Unreleased
 
+- Added date math to dynamic placeholders: any date-based placeholder
+  (`date`, `datetime`, `day`, `day_long`, `month`, `month_long`, `year`,
+  `year_short`, `week_num`) can now be offset by appending a signed amount
+  and a unit letter (`d`/`w`/`m`/`y`) right after its name, e.g.
+  `{{date+3d}}`, `{{date-2w}}`, `{{date+1y:dd/MM/yyyy}}`.
 - Made the smart punctuation character set configurable in Settings via a
   space-separated text field, defaulting to `? ! , . ; : ) " ' ] } \` ~`.
 - Fixed status bar icons being unreadable (white-on-light) when the in-app

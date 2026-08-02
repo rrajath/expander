@@ -131,6 +131,8 @@ fun AddEditSnippetScreen(
                             • {{year_short}} - Year (26)
                             • {{week_num}} - Week number (1-52)
                             • {{date:dd/MM/yyyy}} - Custom format
+                            • {{date+3d}} / {{date-2w}} - Date math (d/w/m/y)
+                            • {{date+1y:dd/MM/yyyy}} - Math + custom format
                         """.trimIndent(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer

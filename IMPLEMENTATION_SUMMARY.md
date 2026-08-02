@@ -29,6 +29,7 @@ A fully functional Android text expansion app that works system-wide using Acces
 - `{{year}}` - Full year (e.g., 2026)
 - `{{date:format}}` - Custom date format (e.g., `{{date:dd/MM/yyyy}}`)
 - `{{time:format}}` - Custom time format (e.g., `{{time:hh:mm a}}`)
+- Date math on any date-based placeholder via `+`/`-` amount + unit (`d`/`w`/`m`/`y`), e.g. `{{date+3d}}`, `{{date-2w:dd/MM/yyyy}}`
 
 ### ✅ UI Components
 - **Material 3 Design** with dark theme forced

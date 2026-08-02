@@ -1,11 +1,16 @@
 package com.rrajath.expander.service
 
 import java.text.SimpleDateFormat
+import java.time.ZoneId
 import java.util.*
 
 object SnippetProcessor {
 
     private val dynamicPlaceholderRegex = Regex("""\{\{([^}]+)\}\}""")
+
+    private val placeholderPattern = Regex(
+        """^(date|time|datetime|day|day_long|month|month_long|year|year_short|week_num)(?:([+-]\d+)([dwmy]))?(?::(.+))?$"""
+    )
 
     /**
      * Processes a snippet expansion, replacing dynamic placeholders with actual values.
@@ -23,6 +28,11 @@ object SnippetProcessor {
      * - {{week_num}} - Week number (e.g., 3)
      * - {{date:format}} - Custom date format (e.g., {{date:dd/MM/yyyy}})
      * - {{time:format}} - Custom time format (e.g., {{time:hh:mm a}})
+     *
+     * Any of the placeholders above can be offset by appending a signed amount and a
+     * unit letter right after the placeholder name, before the optional format:
+     * - d = days, w = weeks, m = months, y = years
+     * e.g. {{date+3d}}, {{date-2w}}, {{month_long+1m}}, {{date+1y:dd/MM/yyyy}}
      */
     fun process(expansion: String): String {
         var processed = expansion
@@ -30,27 +40,33 @@ object SnippetProcessor {
         dynamicPlaceholderRegex.findAll(expansion).forEach { matchResult ->
             val placeholder = matchResult.value
             val content = matchResult.groupValues[1].trim()
+            val match = placeholderPattern.matchEntire(content)
 
-            val replacement = when {
-                content == "date" -> getCurrentDate()
-                content == "time" -> getCurrentTime()
-                content == "datetime" -> getCurrentDateTime()
-                content == "day" -> getDayShort()
-                content == "day_long" -> getDayLong()
-                content == "month" -> getMonthShort()
-                content == "month_long" -> getMonthLong()
-                content == "year" -> getYear()
-                content == "year_short" -> getYearShort()
-                content == "week_num" -> getWeekNum()
-                content.startsWith("date:") -> {
-                    val format = content.substring(5).trim()
-                    formatCurrentDate(format)
+            val replacement = if (match == null) {
+                placeholder // Leave unknown/invalid placeholders as-is
+            } else {
+                val (base, offsetSign, offsetUnit, format) = match.destructured
+                val baseDate = if (offsetUnit.isNotEmpty()) {
+                    applyOffset(Date(), offsetSign.toInt(), offsetUnit)
+                } else {
+                    Date()
                 }
-                content.startsWith("time:") -> {
-                    val format = content.substring(5).trim()
-                    formatCurrentTime(format)
+
+                when {
+                    base == "date" && format.isNotEmpty() -> formatDate(baseDate, format, placeholder)
+                    base == "date" -> formatDate(baseDate, "yyyy-MM-dd", placeholder)
+                    base == "time" && format.isNotEmpty() -> formatDate(baseDate, format, placeholder)
+                    base == "time" -> formatDate(baseDate, "HH:mm:ss", placeholder)
+                    base == "datetime" && format.isEmpty() -> formatDate(baseDate, "yyyy-MM-dd HH:mm:ss", placeholder)
+                    base == "day" && format.isEmpty() -> formatDate(baseDate, "EEE", placeholder)
+                    base == "day_long" && format.isEmpty() -> formatDate(baseDate, "EEEE", placeholder)
+                    base == "month" && format.isEmpty() -> formatDate(baseDate, "MMM", placeholder)
+                    base == "month_long" && format.isEmpty() -> formatDate(baseDate, "MMMM", placeholder)
+                    base == "year" && format.isEmpty() -> formatDate(baseDate, "yyyy", placeholder)
+                    base == "year_short" && format.isEmpty() -> formatDate(baseDate, "yy", placeholder)
+                    base == "week_num" && format.isEmpty() -> formatDate(baseDate, "w", placeholder)
+                    else -> placeholder // format specified on a placeholder that doesn't support one
                 }
-                else -> placeholder // Leave unknown placeholders as-is
             }
 
             processed = processed.replace(placeholder, replacement)
@@ -59,59 +75,23 @@ object SnippetProcessor {
         return processed
     }
 
-    private fun getCurrentDate(): String {
-        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-    }
-
-    private fun getCurrentTime(): String {
-        return SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-    }
-
-    private fun getCurrentDateTime(): String {
-        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-    }
-
-    private fun formatCurrentDate(format: String): String {
-        return try {
-            SimpleDateFormat(format, Locale.getDefault()).format(Date())
-        } catch (e: Exception) {
-            "{{date:$format}}" // Return original if format is invalid
+    private fun applyOffset(date: Date, amount: Int, unit: String): Date {
+        val zonedDateTime = date.toInstant().atZone(ZoneId.systemDefault())
+        val adjusted = when (unit) {
+            "d" -> zonedDateTime.plusDays(amount.toLong())
+            "w" -> zonedDateTime.plusWeeks(amount.toLong())
+            "m" -> zonedDateTime.plusMonths(amount.toLong())
+            "y" -> zonedDateTime.plusYears(amount.toLong())
+            else -> zonedDateTime
         }
+        return Date.from(adjusted.toInstant())
     }
 
-    private fun formatCurrentTime(format: String): String {
+    private fun formatDate(date: Date, format: String, fallback: String): String {
         return try {
-            SimpleDateFormat(format, Locale.getDefault()).format(Date())
+            SimpleDateFormat(format, Locale.getDefault()).format(date)
         } catch (e: Exception) {
-            "{{time:$format}}" // Return original if format is invalid
+            fallback // Return original placeholder if format is invalid
         }
-    }
-
-    private fun getDayShort(): String {
-        return SimpleDateFormat("EEE", Locale.getDefault()).format(Date())
-    }
-
-    private fun getDayLong(): String {
-        return SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
-    }
-
-    private fun getMonthShort(): String {
-        return SimpleDateFormat("MMM", Locale.getDefault()).format(Date())
-    }
-
-    private fun getMonthLong(): String {
-        return SimpleDateFormat("MMMM", Locale.getDefault()).format(Date())
-    }
-
-    private fun getYear(): String {
-        return SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
-    }
-
-    private fun getYearShort(): String {
-        return SimpleDateFormat("yy", Locale.getDefault()).format(Date())
-    }
-
-    private fun getWeekNum(): String {
-        return SimpleDateFormat("w", Locale.getDefault()).format(Date())
     }
 }
