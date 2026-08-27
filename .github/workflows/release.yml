@@ -1,10 +1,18 @@
-name: Build and Release
+name: Release
 
+# Releases are cut by pushing a version tag, never by pushing commits:
+#
+#   git tag v1.2.3
+#   git push origin v1.2.3
+#
+# That builds a debug APK, a release APK and a release AAB, rolls the
+# CHANGELOG "Unreleased" section into a dated "[1.2.3]" section (committed
+# back to main), and publishes a GitHub Release with the three artifacts
+# attached and the changelog section as the body.
 on:
   push:
-    branches:
-      - main
-      - master
+    tags:
+      - "v*.*.*"
 
 jobs:
   release:
@@ -13,165 +21,108 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout code
+      - name: Resolve version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing $VERSION (tag $GITHUB_REF_NAME)"
+
+      # Build from the tagged commit so the artifacts match the tag exactly.
+      - name: Checkout tagged commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Get latest tag
-        id: get_tag
-        run: |
-          # Get the latest tag, or use v0.0.0 if no tags exist
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "Latest tag: $LATEST_TAG"
-
-      - name: Calculate next version
-        id: semver
-        run: |
-          LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
-
-          # Remove 'v' prefix if present
-          VERSION=${LATEST_TAG#v}
-
-          # Split version into major.minor.patch
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-
-          # Check commit message for version bump hints
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-
-          if echo "$COMMIT_MSG" | grep -qiE '\[major\]|breaking change'; then
-            MAJOR=$((MAJOR + 1))
-            MINOR=0
-            PATCH=0
-          elif echo "$COMMIT_MSG" | grep -qiE '\[minor\]|feat:'; then
-            MINOR=$((MINOR + 1))
-            PATCH=0
-          else
-            PATCH=$((PATCH + 1))
-          fi
-
-          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-          NEW_TAG="v$NEW_VERSION"
-          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
-
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-
-          echo "New version: $NEW_TAG (versionCode: $VERSION_CODE)"
-
-      - name: Update version in build.gradle.kts
-        run: |
-          sed -i "s/versionCode = [0-9]*/versionCode = ${{ steps.semver.outputs.version_code }}/" app/build.gradle.kts
-          sed -i 's/versionName = "[^"]*"/versionName = "${{ steps.semver.outputs.new_version }}"/' app/build.gradle.kts
-
-          echo "Updated build.gradle.kts:"
-          grep -A 2 "versionCode\|versionName" app/build.gradle.kts
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Decode Keystore
+      - name: Decode keystore
         env:
           ENCODED_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          if [ ! -z "$ENCODED_KEYSTORE" ]; then
-            echo "$ENCODED_KEYSTORE" | base64 --decode > ${{ github.workspace }}/release-keystore.jks
+          if [ -n "$ENCODED_KEYSTORE" ]; then
+            echo "$ENCODED_KEYSTORE" | base64 --decode > "$GITHUB_WORKSPACE/release-keystore.jks"
+            echo "Keystore decoded."
           else
-            echo "Warning: No keystore found. Release APK will be unsigned."
+            echo "::warning::KEYSTORE_BASE64 secret not set - the release APK and AAB will be unsigned."
           fi
 
-      - name: Build Release APK
+      - name: Build debug APK, release APK and release AAB
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/release-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --stacktrace
-
-      - name: Rename APKs
         run: |
-          VERSION="${{ steps.semver.outputs.new_version }}"
+          ./gradlew \
+            assembleDebug \
+            assembleRelease \
+            bundleRelease \
+            -PVERSION_NAME="${{ steps.version.outputs.version }}" \
+            --stacktrace
 
-          # Rename debug APK
+      - name: Collect and rename artifacts
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p dist
+
           cp app/build/outputs/apk/debug/app-debug.apk \
-             app/build/outputs/apk/debug/expander-$VERSION-debug.apk
+             "dist/expander-$VERSION-debug.apk"
 
-          # Rename release APK
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
             cp app/build/outputs/apk/release/app-release.apk \
-               app/build/outputs/apk/release/expander-$VERSION-release.apk
-          elif [ -f app/build/outputs/apk/release/app-release-unsigned.apk ]; then
+               "dist/expander-$VERSION-release.apk"
+          else
             cp app/build/outputs/apk/release/app-release-unsigned.apk \
-               app/build/outputs/apk/release/expander-$VERSION-release-unsigned.apk
+               "dist/expander-$VERSION-release-unsigned.apk"
           fi
 
-      - name: Create Git Tag
+          cp app/build/outputs/bundle/release/app-release.aab \
+             "dist/expander-$VERSION-release.aab"
+
+          ls -la dist
+
+      # Work on main for the changelog roll so the commit lands on the branch,
+      # not on the detached tag checkout.
+      - name: Roll CHANGELOG Unreleased section into this version
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+          python3 .github/scripts/roll_changelog.py \
+            "${{ steps.version.outputs.version }}" "$(date +%Y-%m-%d)"
+
+      - name: Commit CHANGELOG update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a ${{ steps.semver.outputs.new_tag }} -m "Release ${{ steps.semver.outputs.new_tag }}"
-          git push origin ${{ steps.semver.outputs.new_tag }}
-
-      - name: Generate Release Notes
-        id: release_notes
-        run: |
-          VERSION="${{ steps.semver.outputs.new_version }}"
-          PREV_TAG="${{ steps.get_tag.outputs.latest_tag }}"
-
-          echo "## What's Changed" > release_notes.md
-          echo "" >> release_notes.md
-
-          # Get commits since last tag
-          if [ "$PREV_TAG" != "v0.0.0" ]; then
-            git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" >> release_notes.md
-          else
-            git log --pretty=format:"- %s (%h)" >> release_notes.md
-          fi
-
-          echo "" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "### Downloads" >> release_notes.md
-          echo "- \`expander-$VERSION-debug.apk\` - Debug build for testing" >> release_notes.md
-          echo "- \`expander-$VERSION-release.apk\` - Production build (signed)" >> release_notes.md
-
-          cat release_notes.md
+          git add CHANGELOG.md
+          git commit -m "chore: roll CHANGELOG Unreleased into ${GITHUB_REF_NAME}" \
+            || echo "CHANGELOG already up to date, nothing to commit."
+          git push origin main
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.semver.outputs.new_tag }}
-          name: Release ${{ steps.semver.outputs.new_version }}
-          body_path: release_notes.md
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: release-notes.md
           draft: false
           prerelease: false
-          files: |
-            app/build/outputs/apk/debug/expander-${{ steps.semver.outputs.new_version }}-debug.apk
-            app/build/outputs/apk/release/expander-${{ steps.semver.outputs.new_version }}-*.apk
+          files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Debug APK as Artifact
+      - name: Upload artifacts to the workflow run
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-${{ steps.semver.outputs.new_version }}
-          path: app/build/outputs/apk/debug/expander-${{ steps.semver.outputs.new_version }}-debug.apk
-          retention-days: 90
-
-      - name: Upload Release APK as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-${{ steps.semver.outputs.new_version }}
-          path: app/build/outputs/apk/release/expander-${{ steps.semver.outputs.new_version }}-*.apk
+          name: expander-${{ steps.version.outputs.version }}
+          path: dist/*
           retention-days: 90

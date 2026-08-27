@@ -1,10 +1,18 @@
 # Changelog
 
 All notable changes to Expander are documented in this file, newest first.
-Dates are commit dates from git history; this project does not yet use
-version tags.
+Older sections are dated by commit date; from v1.0.0 on, each `[x.y.z]`
+section is filled in automatically when the matching `vx.y.z` tag is pushed.
 
 ## Unreleased
+
+- Changed the release pipeline to be tag-triggered. Pushing a commit to
+  `main` no longer creates a GitHub release; instead, pushing a `vX.Y.Z`
+  tag builds a debug APK, a signed release APK and a signed release AAB,
+  rolls this "Unreleased" section into a dated `[X.Y.Z]` section, and
+  publishes a GitHub Release with the three artifacts attached. The version
+  name now lives in `gradle.properties` (`VERSION_NAME`) and CI overrides
+  it from the tag; `versionCode` is derived from it.
 
 - Fixed backspace-undo not working after expanding a snippet with dynamic
   placeholders. Undo detection assumed the keyboard removed exactly one

@@ -1,182 +1,133 @@
 # Release and Versioning Guide
 
-This project uses automatic semantic versioning (semver) and GitHub releases for every push to the main branch.
+Releases are cut by pushing a version tag. Pushing commits to `main` does
+**not** create a release.
 
 ## How It Works
 
-### Automatic Releases
+### Cutting a release
 
-Every push to `main` or `master` branch automatically:
-1. Calculates the next version number using semver
-2. Updates `versionCode` and `versionName` in `app/build.gradle.kts`
-3. Builds debug and release APKs
-4. Creates a Git tag (e.g., `v1.2.3`)
-5. Creates a GitHub release with:
-   - Commit history since last release
-   - Debug APK attached
-   - Release APK attached (signed if keystore is configured)
-
-### Semantic Versioning
-
-The version format is: `MAJOR.MINOR.PATCH` (e.g., `1.2.3`)
-
-**Version increments are determined by your commit message:**
-
-| Commit Message Contains | Version Bump | Example |
-|------------------------|--------------|---------|
-| `[major]` or `breaking change` | Major version | `1.0.0` → `2.0.0` |
-| `[minor]` or `feat:` | Minor version | `1.0.0` → `1.1.0` |
-| Anything else | Patch version | `1.0.0` → `1.0.1` |
-
-### Examples
+Push a tag shaped like `vMAJOR.MINOR.PATCH`:
 
 ```bash
-# Patch version bump (1.0.0 → 1.0.1)
-git commit -m "fix: Fixed trigger case sensitivity bug"
-
-# Minor version bump (1.0.0 → 1.1.0)
-git commit -m "feat: Added dark mode support"
-git commit -m "[minor] Added new feature"
-
-# Major version bump (1.0.0 → 2.0.0)
-git commit -m "[major] Complete UI redesign"
-git commit -m "breaking change: Changed database schema"
+git tag v1.2.3
+git push origin v1.2.3
 ```
 
-## Version Code Calculation
+The `Release` workflow (`.github/workflows/release.yml`) then:
 
-`versionCode` is calculated as: `MAJOR * 10000 + MINOR * 100 + PATCH`
+1. Reads the version (`1.2.3`) from the tag name.
+2. Builds, with `-PVERSION_NAME=1.2.3` passed to Gradle:
+   - debug APK (`assembleDebug`)
+   - release APK (`assembleRelease`, signed if keystore secrets are set)
+   - release AAB (`bundleRelease`, signed if keystore secrets are set)
+3. Rolls the `## Unreleased` section of `CHANGELOG.md` into a dated
+   `## [1.2.3] - YYYY-MM-DD` section and commits that back to `main`.
+4. Publishes a GitHub Release named `v1.2.3` with the changelog section as
+   the body and these three files attached:
+   - `expander-1.2.3-debug.apk`
+   - `expander-1.2.3-release.apk`
+   - `expander-1.2.3-release.aab`
 
-Examples:
-- `v1.0.0` → versionCode `10000`
-- `v1.2.3` → versionCode `10203`
-- `v2.5.7` → versionCode `20507`
+The same three files are also uploaded as a workflow-run artifact
+(`expander-1.2.3`, kept 90 days) as a fallback.
 
-This ensures version codes always increment and supports up to:
-- 999 major versions
-- 99 minor versions per major
-- 99 patches per minor
+### Versioning
 
-## Workflows
+`versionName` lives in `gradle.properties` as `VERSION_NAME`. In CI it is
+overridden from the tag; for local or manual builds it is whatever the file
+says.
 
-### 1. Release Workflow (`.github/workflows/release.yml`)
+`versionCode` is derived from `versionName` in `app/build.gradle.kts`:
 
-**Triggers:** Push to `main` or `master`
-
-**Actions:**
-- Generates semantic version
-- Updates app version
-- Builds signed APKs
-- Creates GitHub release
-- Attaches APKs to release
-
-### 2. Build Workflow (`.github/workflows/build-apks.yml`)
-
-**Triggers:** Pull requests and pushes to `develop`/`dev` branches
-
-**Actions:**
-- Builds debug and release APKs
-- Uploads as artifacts (no release created)
-
-## Making a Release
-
-### Standard Release (Patch)
-
-```bash
-git add .
-git commit -m "Fix: Resolved text expansion bug"
-git push origin main
+```
+versionCode = MAJOR * 10000 + MINOR * 100 + PATCH
 ```
 
-This creates version `v0.0.1` (or increments patch: `v1.2.3` → `v1.2.4`)
+| Tag      | versionName | versionCode |
+|----------|-------------|-------------|
+| `v1.0.0` | `1.0.0`     | `10000`     |
+| `v1.2.3` | `1.2.3`     | `10203`     |
+| `v2.5.7` | `2.5.7`     | `20507`     |
 
-### Feature Release (Minor)
+This supports up to 99 minor and 99 patch releases per step and always
+increments. There is no automatic semver bump from commit messages; you
+choose the version when you tag.
 
-```bash
-git add .
-git commit -m "feat: Added export to CSV feature"
-git push origin main
-```
+### Release notes
 
-This increments minor version: `v1.2.3` → `v1.3.0`
+The release body is the content that was under `## Unreleased` in
+`CHANGELOG.md` at release time. Keep that section current as you work (see
+the changelog rule in `CLAUDE.md`) and the release notes take care of
+themselves. After the workflow runs, `main` has a new commit
+(`chore: roll CHANGELOG Unreleased into v1.2.3`) - pull it before your next
+local work.
 
-### Breaking Change Release (Major)
+If `## Unreleased` is empty when you tag, the changelog step fails on
+purpose rather than publishing an empty release. Add at least one entry
+first.
 
-```bash
-git add .
-git commit -m "[major] Redesigned database schema"
-git push origin main
-```
+## Other workflow
 
-This increments major version: `v1.2.3` → `v2.0.0`
+`.github/workflows/build-apks.yml` builds debug and release APKs on pull
+requests to `main`/`master` and on pushes to `develop`/`dev`, uploading
+them as artifacts. It never creates a release.
 
-## Downloading Releases
+## Making a release, step by step
+
+1. Make sure `## Unreleased` in `CHANGELOG.md` describes what is shipping.
+2. Decide the version number (`MAJOR.MINOR.PATCH`).
+3. Tag and push:
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+4. Watch the run in the repo's **Actions** tab.
+5. When it finishes, `git pull` on `main` to pick up the changelog commit.
+
+## Downloading a release
 
 ### From GitHub Releases
 
-1. Go to your repository on GitHub
-2. Click on "Releases" (right sidebar)
-3. Select the version you want
-4. Download the APK from the "Assets" section:
-   - `expander-X.Y.Z-debug.apk` - Debug build
-   - `expander-X.Y.Z-release.apk` - Release build (signed)
+1. Open the repository on GitHub, click **Releases**.
+2. Pick the version, download from **Assets**:
+   - `expander-X.Y.Z-debug.apk` - debug build
+   - `expander-X.Y.Z-release.apk` - release build (signed)
+   - `expander-X.Y.Z-release.aab` - app bundle for Play Store upload
 
-### From GitHub Actions Artifacts
+### From a workflow run
 
-1. Go to "Actions" tab
-2. Click on the workflow run
-3. Scroll to "Artifacts" section
-4. Download the APK
-
-Artifacts are kept for 90 days.
-
-## First Release
-
-If this is your first release, the workflow will start at `v0.0.1`. To start with a different version:
-
-```bash
-# Create initial tag
-git tag -a v1.0.0 -m "Initial release"
-git push origin v1.0.0
-
-# Next push will increment from v1.0.0
-```
+1. **Actions** tab, open the `Release` run for the tag.
+2. Download the `expander-X.Y.Z` artifact (kept 90 days).
 
 ## Troubleshooting
 
-**Release APK is unsigned:**
-- Ensure you've set up the keystore secrets in GitHub (see `SIGNING_SETUP.md`)
-- Required secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`
+**Release APK / AAB is unsigned:**
+- Set the keystore secrets in GitHub (see `SIGNING_SETUP.md`):
+  `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+- Without `KEYSTORE_BASE64` the workflow logs a warning and produces
+  `expander-X.Y.Z-release-unsigned.apk`.
 
-**Version not incrementing correctly:**
-- Check your commit message format
-- Use `[major]`, `[minor]`, or `feat:` to control version bumps
-- Default is patch version increment
+**Changelog step failed with "No entries under '## Unreleased'":**
+- The `## Unreleased` section was empty. Add an entry, then delete and
+  re-push the tag (see below).
 
-**Git tag already exists:**
-- This shouldn't happen with auto-incrementing
-- If needed, delete the tag locally and remotely:
-  ```bash
-  git tag -d v1.2.3
-  git push origin :refs/tags/v1.2.3
-  ```
+**Tag already exists / need to redo a release:**
+```bash
+git tag -d v1.2.3
+git push origin :refs/tags/v1.2.3
+# fix things, then tag and push again
+```
+Delete the GitHub Release too if one was already created.
 
-## Manual Version Control
+**Wrong version in the build:**
+- The version comes only from the tag name. `v1.2.3` -> `1.2.3`. Make sure
+  the tag matches `v*.*.*`.
 
-If you need to manually set a version:
+## Manually building a specific version locally
 
-1. Create and push the tag:
-   ```bash
-   git tag -a v2.5.0 -m "Release v2.5.0"
-   git push origin v2.5.0
-   ```
+```bash
+./gradlew assembleRelease bundleRelease -PVERSION_NAME=1.2.3
+```
 
-2. The next automatic release will increment from this version
-
-## Best Practices
-
-1. **Use conventional commits** for clear version history
-2. **Test in develop branch** before merging to main
-3. **Use [major] sparingly** - breaking changes should be rare
-4. **Keep releases small** - frequent small releases are better than large ones
-5. **Review release notes** after each release to ensure accuracy
+Or edit `VERSION_NAME` in `gradle.properties` and build normally.

@@ -7,6 +7,17 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Version name comes from gradle.properties (VERSION_NAME); the release CI
+// overrides it from the pushed git tag via -PVERSION_NAME=x.y.z. versionCode is
+// derived so the two never drift: 1.2.3 -> 1 * 10000 + 2 * 100 + 3 = 10203.
+val appVersionName: String = (providers.gradleProperty("VERSION_NAME").orNull ?: "1.0").trim()
+val appVersionCode: Int = appVersionName.split(".").let { parts ->
+    val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+    major * 10000 + minor * 100 + patch
+}
+
 android {
     namespace = "com.rrajath.expander"
     compileSdk = 36
@@ -15,8 +26,8 @@ android {
         applicationId = "com.rrajath.expander"
         minSdk = 33
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
