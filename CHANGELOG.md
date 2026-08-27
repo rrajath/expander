@@ -6,6 +6,15 @@ version tags.
 
 ## Unreleased
 
+- Fixed backspace-undo not working after expanding a snippet with dynamic
+  placeholders. Undo detection assumed the keyboard removed exactly one
+  character, which held for short static expansions but not for dynamic
+  values containing punctuation and digits (e.g. `2026-08-26`), where the
+  keyboard often deletes a whole chunk on a single backspace. The first
+  edit that shortens the freshly-inserted expansion now reverts it to the
+  trigger regardless of how many characters were removed. The service also
+  ignores its own `ACTION_SET_TEXT` echo event and drops the undo history
+  once the user types past the expansion.
 - Added date math to dynamic placeholders: any date-based placeholder
   (`date`, `datetime`, `day`, `day_long`, `month`, `month_long`, `year`,
   `year_short`, `week_num`) can now be offset by appending a signed amount

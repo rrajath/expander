@@ -137,10 +137,30 @@ class TextExpansionService : AccessibilityService() {
                 return
             }
 
-            // Check if text ends with a space (trigger for expansion)
-            if (currentText.endsWith(" ") && currentText.isNotEmpty()) {
-                if (!applySmartPunctuationSpacing(source, currentText)) {
-                    processTextForExpansion(source, currentText)
+            val historyBefore = lastExpansion
+            val fullExpandedText = historyBefore?.let { it.textBeforeTrigger + it.expansion }
+
+            when {
+                // Our own ACTION_SET_TEXT echo right after an expansion. Ignore it so
+                // we neither re-expand the result nor disturb the undo history.
+                fullExpandedText != null && currentText == fullExpandedText -> Unit
+
+                // Text ends with a space: candidate for expansion.
+                currentText.endsWith(" ") && currentText.isNotEmpty() -> {
+                    if (!applySmartPunctuationSpacing(source, currentText)) {
+                        processTextForExpansion(source, currentText)
+                    }
+                }
+            }
+
+            // Once the user edits past the freshly-inserted expansion, the undo
+            // history is stale; drop it so it can't mis-fire on a later edit. Skip
+            // this when the block above just recorded a new expansion.
+            if (lastExpansion === historyBefore) {
+                lastExpansion?.let { history ->
+                    if (ExpansionUndo.isHistoryStale(currentText, history.textBeforeTrigger, history.expansion)) {
+                        lastExpansion = null
+                    }
                 }
             }
 
@@ -154,10 +174,7 @@ class TextExpansionService : AccessibilityService() {
 
     private fun shouldUndoExpansion(currentText: String): Boolean {
         val history = lastExpansion ?: return false
-
-        // Check if user deleted one character from the expanded text
-        val expectedTextAfterBackspace = history.textBeforeTrigger + history.expansion.dropLast(1)
-        return currentText == expectedTextAfterBackspace
+        return ExpansionUndo.shouldUndo(currentText, history.textBeforeTrigger, history.expansion)
     }
 
     private fun undoExpansion(source: AccessibilityNodeInfo) {
@@ -286,5 +303,48 @@ class TextExpansionService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
+    }
+}
+
+/**
+ * Pure decision logic for "delete right after an expansion reverts it back to the
+ * trigger". Kept separate from the service so it can be unit tested without an
+ * Android runtime.
+ *
+ * The state we compare against is the text the service inserted:
+ * `textBeforeTrigger + expansion` (expansion already has its dynamic placeholders
+ * resolved).
+ */
+internal object ExpansionUndo {
+
+    /**
+     * True when [currentText] looks like the user just deleted into the
+     * freshly-inserted expansion (any number of characters), so it should be
+     * reverted to the trigger.
+     *
+     * We deliberately do not require exactly one character to have been removed:
+     * dynamic expansions contain punctuation and digits (e.g. "2026-08-26") and the
+     * keyboard, which never saw the programmatic insert, often removes a whole chunk
+     * on a single backspace.
+     */
+    fun shouldUndo(currentText: String, textBeforeTrigger: String, expansion: String): Boolean {
+        val fullExpandedText = textBeforeTrigger + expansion
+        return currentText.length < fullExpandedText.length &&
+            currentText.startsWith(textBeforeTrigger) &&
+            fullExpandedText.startsWith(currentText)
+    }
+
+    /**
+     * True when the user has moved on from the expansion (typed more text, or edited
+     * it into something that is no longer a prefix of what we inserted). The undo
+     * history is stale at that point and should be discarded so it can't mis-fire
+     * on an unrelated later edit.
+     *
+     * Note: the exact-match case (`currentText == fullExpandedText`) is treated as
+     * "not stale" so the history survives our own ACTION_SET_TEXT echo event.
+     */
+    fun isHistoryStale(currentText: String, textBeforeTrigger: String, expansion: String): Boolean {
+        val fullExpandedText = textBeforeTrigger + expansion
+        return currentText != fullExpandedText && !fullExpandedText.startsWith(currentText)
     }
 }
