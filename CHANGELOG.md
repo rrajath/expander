@@ -7,6 +7,8 @@ were backfilled by hand; sections older than that are dated by commit date.
 
 ## Unreleased
 
+## [1.1.1] - 2026-08-27
+
 - Changed the release pipeline to be tag-triggered. Pushing a commit to
   `main` no longer creates a GitHub release; instead, pushing a `vX.Y.Z`
   tag builds a debug APK, a signed release APK and a signed release AAB,
