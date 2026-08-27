@@ -1,8 +1,9 @@
 # Changelog
 
 All notable changes to Expander are documented in this file, newest first.
-Older sections are dated by commit date; from v1.0.0 on, each `[x.y.z]`
-section is filled in automatically when the matching `vx.y.z` tag is pushed.
+Entries under `## Unreleased` are rolled into a dated `## [x.y.z]` section
+when the matching `vx.y.z` tag is pushed. The `[1.0.4]`-`[1.1.0]` sections
+were backfilled by hand; sections older than that are dated by commit date.
 
 ## Unreleased
 
@@ -13,7 +14,6 @@ section is filled in automatically when the matching `vx.y.z` tag is pushed.
   publishes a GitHub Release with the three artifacts attached. The version
   name now lives in `gradle.properties` (`VERSION_NAME`) and CI overrides
   it from the tag; `versionCode` is derived from it.
-
 - Fixed backspace-undo not working after expanding a snippet with dynamic
   placeholders. Undo detection assumed the keyboard removed exactly one
   character, which held for short static expansions but not for dynamic
@@ -23,11 +23,17 @@ section is filled in automatically when the matching `vx.y.z` tag is pushed.
   trigger regardless of how many characters were removed. The service also
   ignores its own `ACTION_SET_TEXT` echo event and drops the undo history
   once the user types past the expansion.
+
+## [1.1.0] - 2026-08-02
+
 - Added date math to dynamic placeholders: any date-based placeholder
   (`date`, `datetime`, `day`, `day_long`, `month`, `month_long`, `year`,
   `year_short`, `week_num`) can now be offset by appending a signed amount
   and a unit letter (`d`/`w`/`m`/`y`) right after its name, e.g.
   `{{date+3d}}`, `{{date-2w}}`, `{{date+1y:dd/MM/yyyy}}`.
+
+## [1.0.5] - 2026-07-31
+
 - Made the smart punctuation character set configurable in Settings via a
   space-separated text field, defaulting to `? ! , . ; : ) " ' ] } \` ~`.
 - Fixed status bar icons being unreadable (white-on-light) when the in-app
@@ -40,7 +46,7 @@ section is filled in automatically when the matching `vx.y.z` tag is pushed.
   popup, producing "you ? "), the space is moved from before the
   punctuation to after it ("you? "). Toggleable in Settings, on by default.
 
-## 2026-07-11
+## [1.0.4] - 2026-07-11
 
 - Added a debug build type with a distinct application ID (`.debug`
   suffix), version name suffix, and "Expander Debug" label so debug builds

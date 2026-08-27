@@ -77,13 +77,16 @@ them as artifacts. It never creates a release.
 
 1. Make sure `## Unreleased` in `CHANGELOG.md` describes what is shipping.
 2. Decide the version number (`MAJOR.MINOR.PATCH`).
-3. Tag and push:
+3. Bump `VERSION_NAME` in `gradle.properties` to match, commit, and push to
+   `main`. CI overrides this from the tag anyway, but keeping the file
+   current means local builds report the right version.
+4. Tag and push:
    ```bash
    git tag v1.2.3
    git push origin v1.2.3
    ```
-4. Watch the run in the repo's **Actions** tab.
-5. When it finishes, `git pull` on `main` to pick up the changelog commit.
+5. Watch the run in the repo's **Actions** tab.
+6. When it finishes, `git pull` on `main` to pick up the changelog commit.
 
 ## Downloading a release
 
