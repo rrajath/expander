@@ -104,13 +104,20 @@ Any date-based placeholder above (`date`, `datetime`, `day`, `day_long`, `month`
 
 ### Installation
 
-1. Download and install the APK
+1. Download and install the **signed release APK** (`expander-X.Y.Z-release.apk`)
+   from the [Releases](../../releases) page. Prefer the release APK over the
+   debug APK.
 2. Open the app
 3. Grant accessibility permission:
-   - Tap **Settings** → **Accessibility Settings**
-   - Find **Expander** in the list
-   - Toggle it **ON**
-   - Confirm the permission prompt
+   - Tap **Settings** → **Accessibility Settings** (or the **Enable** button on
+     the home screen)
+   - Read the data-use disclosure and tap **Agree and continue**
+   - Find **Expander** in the system list
+   - Toggle it **ON** and confirm the permission prompt
+
+> **"App blocked to protect your device"?** Google Play Protect can block a
+> sideloaded app that uses the accessibility permission. See
+> [Troubleshooting](#-troubleshooting) below for workarounds.
 
 ### Creating Your First Snippet
 
@@ -289,17 +296,22 @@ Use Java's SimpleDateFormat patterns for custom date/time formatting:
 ### Permissions
 
 - **Accessibility Service** - Required for system-wide text monitoring and replacement
-  - Only monitors text change events
-  - Does not collect or transmit any data
-  - Processes everything locally on your device
+  - Only listens for text-change events and reads the focused field to replace the trigger
+  - Does not collect or transmit any data; processes everything locally
+  - `android:isAccessibilityTool` is `false` (Expander is a productivity tool, not
+    a disability-support tool). A prominent in-app disclosure and an explicit
+    opt-in gate the service before it can be enabled.
 
 ### Privacy
 
 - ✅ **All data stays on your device**
-- ✅ **No internet connection required**
+- ✅ **No internet connection required** (the app has no internet permission)
 - ✅ **No analytics or tracking**
 - ✅ **No ads**
 - ✅ **Open source** (code can be audited)
+
+Full policy: [`docs/PRIVACY.md`](docs/PRIVACY.md). The same text is shown in-app
+under **Settings → Privacy and data use**.
 
 ## 🐛 Troubleshooting
 
@@ -314,6 +326,22 @@ Use Java's SimpleDateFormat patterns for custom date/time formatting:
 ### Accessibility service disabled after reinstall?
 
 This is an Android security feature. Accessibility permissions don't persist across app reinstalls. You'll need to re-enable the service in Settings → Accessibility after each reinstall.
+
+### "App blocked to protect your device" when installing or updating?
+
+Google Play Protect can block a **sideloaded** app that requests the
+accessibility permission, especially before the APK has any reputation with
+Google. This is not a problem with the app itself. Workarounds, in order of
+preference:
+
+1. Install the **signed release APK** (`-release.apk`), not the debug APK.
+2. **Uninstall the old version first**, then install the new APK fresh.
+3. **Install via adb** from a computer: `adb install -r expander-X.Y.Z-release.apk`.
+4. Temporarily turn off Play Protect: Play Store → profile icon → **Play Protect**
+   → gear icon → **Scan apps with Play Protect** off → install → turn it back on.
+
+A future Google Play listing would remove this block for installs from the Play
+Store.
 
 ### Theme not changing?
 

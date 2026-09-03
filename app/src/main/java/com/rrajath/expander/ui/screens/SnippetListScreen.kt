@@ -18,8 +18,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rrajath.expander.data.Snippet
 import com.rrajath.expander.service.TextExpansionService
+import com.rrajath.expander.ui.components.AccessibilityDisclosureDialog
 import com.rrajath.expander.ui.components.EmptyState
 import com.rrajath.expander.ui.components.SearchBar
+import com.rrajath.expander.util.AccessibilityDisclosure
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +65,32 @@ fun SnippetListScreen(
         val context = LocalContext.current
         var isAccessibilityEnabled by remember { mutableStateOf(TextExpansionService.isAccessibilityServiceEnabled(context)) }
         var showWarningBanner by remember { mutableStateOf(!isAccessibilityEnabled) }
+        var showAccessibilityDisclosure by remember { mutableStateOf(false) }
+
+        fun openAccessibilitySettings() {
+            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+
+        // The system Accessibility Settings screen is only reachable after the
+        // user has seen the data-use disclosure and opted in at least once.
+        fun requestEnableAccessibility() {
+            if (AccessibilityDisclosure.isAccepted(context)) {
+                openAccessibilitySettings()
+            } else {
+                showAccessibilityDisclosure = true
+            }
+        }
+
+        if (showAccessibilityDisclosure) {
+            AccessibilityDisclosureDialog(
+                onDismiss = { showAccessibilityDisclosure = false },
+                onAgree = {
+                    AccessibilityDisclosure.setAccepted(context, true)
+                    showAccessibilityDisclosure = false
+                    openAccessibilitySettings()
+                }
+            )
+        }
 
         // Recheck when the screen resumes
         DisposableEffect(Unit) {
@@ -114,9 +142,7 @@ fun SnippetListScreen(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
-                            onClick = {
-                                context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                            },
+                            onClick = { requestEnableAccessibility() },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error
                             )

@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rrajath.expander.service.TextExpansionService
+import com.rrajath.expander.ui.components.AccessibilityDisclosureDialog
+import com.rrajath.expander.util.AccessibilityDisclosure
 import com.rrajath.expander.util.ThemeMode
 import com.rrajath.expander.util.ThemePreferences
 
@@ -32,6 +34,27 @@ fun SettingsScreen(
     var smartPunctuationChars by remember { mutableStateOf(TextExpansionService.getSmartPunctuationCharsRaw(context)) }
     var currentTheme by remember { mutableStateOf(ThemePreferences.getThemeMode(context)) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showAccessibilityDisclosure by remember { mutableStateOf(false) }
+    var showDisclosureReview by remember { mutableStateOf(false) }
+
+    fun openAccessibilitySettings() {
+        context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
+    if (showAccessibilityDisclosure) {
+        AccessibilityDisclosureDialog(
+            onDismiss = { showAccessibilityDisclosure = false },
+            onAgree = {
+                AccessibilityDisclosure.setAccepted(context, true)
+                showAccessibilityDisclosure = false
+                openAccessibilitySettings()
+            }
+        )
+    }
+
+    if (showDisclosureReview) {
+        AccessibilityDisclosureDialog(onDismiss = { showDisclosureReview = false })
+    }
 
     if (showThemeDialog) {
         ThemeSelectionDialog(
@@ -165,8 +188,11 @@ fun SettingsScreen(
                 title = "Accessibility Settings",
                 subtitle = "Grant accessibility permission",
                 onClick = {
-                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                    context.startActivity(intent)
+                    if (AccessibilityDisclosure.isAccepted(context)) {
+                        openAccessibilitySettings()
+                    } else {
+                        showAccessibilityDisclosure = true
+                    }
                 }
             )
 
@@ -219,6 +245,12 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
+            SettingsItem(
+                title = "Privacy and data use",
+                subtitle = "What the accessibility service can access",
+                onClick = { showDisclosureReview = true }
+            )
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -241,7 +273,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "A text expansion tool that works system-wide using accessibility services.",
+                        text = "A text expansion tool that works system-wide using Android's accessibility service. All processing happens on your device, and the app has no internet permission.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

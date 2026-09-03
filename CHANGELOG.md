@@ -7,6 +7,21 @@ were backfilled by hand; sections older than that are dated by commit date.
 
 ## Unreleased
 
+- Added a data-use disclosure for the accessibility service. The first time you
+  tap **Enable** on the home banner or **Accessibility Settings** in Settings,
+  Expander now shows a dialog explaining what the service can read, why it needs
+  it, and that nothing leaves your device, and asks you to agree before it opens
+  the system Accessibility Settings screen. The same text is available any time
+  under **Settings → Privacy and data use**. This is required by Google Play
+  policy for an app that uses the accessibility API for a non-accessibility-tool
+  purpose.
+- Marked the service `android:isAccessibilityTool="false"` and dropped the
+  unused `flagReportViewIds` and `flagRetrieveInteractiveWindows` accessibility
+  flags, so the service only requests what plain text expansion needs. Rewrote
+  the service description shown in system settings.
+- Added `docs/PRIVACY.md` and a Play Protect troubleshooting section to the
+  README.
+
 ## [1.1.1] - 2026-08-27
 
 - Changed the release pipeline to be tag-triggered. Pushing a commit to

@@ -1,5 +1,22 @@
 <resources>
     <string name="app_name">Expander</string>
     <string name="create_shortcut_menu_label">Create a Shortcut</string>
-    <string name="accessibility_service_description">Expander monitors text input to automatically expand shortcut triggers into full text. This service requires access to text fields across all apps to detect and replace your configured shortcuts.</string>
+
+    <!-- Shown in the system Accessibility Settings screen for this service. -->
+    <string name="accessibility_service_description">Expander expands shortcut triggers you configure into full text as you type. It reads and replaces text in the field you are typing in, across all apps. All processing happens on your device and nothing is sent over the internet.</string>
+
+    <!-- In-app disclosure shown before the user enables the accessibility service. -->
+    <string name="accessibility_disclosure_title">How Expander uses accessibility access</string>
+    <string name="accessibility_disclosure_access_heading">What Expander can access</string>
+    <string name="accessibility_disclosure_access_body">When you enable the accessibility service, Android lets Expander read the text you type in editable fields in other apps and replace it.</string>
+    <string name="accessibility_disclosure_why_heading">Why it needs this</string>
+    <string name="accessibility_disclosure_why_body">Expander watches for a shortcut trigger you have configured, such as \"brb\", and replaces it with the full text you set. Reading and replacing text in the focused field is the only way to expand shortcuts across every app.</string>
+    <string name="accessibility_disclosure_data_heading">What happens to your text</string>
+    <string name="accessibility_disclosure_data_body">All processing happens on your device, in memory, for the field you are currently typing in. Expander does not store the contents of other apps. It has no internet permission, so nothing is ever sent off your device. There are no analytics and no tracking.</string>
+    <string name="accessibility_disclosure_not_heading">What Expander is not</string>
+    <string name="accessibility_disclosure_not_body">Expander is a typing productivity tool. It is not an accessibility aid for people with disabilities.</string>
+    <string name="accessibility_disclosure_revoke">You can turn the accessibility service off at any time in Android Settings under Accessibility.</string>
+    <string name="accessibility_disclosure_agree">Agree and continue</string>
+    <string name="accessibility_disclosure_decline">Not now</string>
+    <string name="accessibility_disclosure_close">Close</string>
 </resources>

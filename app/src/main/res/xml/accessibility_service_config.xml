@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  isAccessibilityTool="false": Expander is a typing productivity tool, not a
+  disability-support tool, so it does not claim the accessibility-tool exemption.
+  A prominent in-app disclosure and an explicit opt-in gate the service (see
+  util/AccessibilityDisclosure and ui/components/AccessibilityDisclosureDialog).
+
+  Capabilities are kept to the minimum the expansion feature needs:
+  - accessibilityEventTypes=typeViewTextChanged: notice the trigger word as it is typed
+  - canRetrieveWindowContent: read the focused field's text so the trigger can be replaced
+  No view-id reporting or interactive-window inspection is requested.
+-->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeViewTextChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows"
     android:canRetrieveWindowContent="true"
     android:description="@string/accessibility_service_description"
+    android:isAccessibilityTool="false"
     android:notificationTimeout="0"
     android:settingsActivity="com.rrajath.expander.MainActivity" />
