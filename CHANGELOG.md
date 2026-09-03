@@ -21,6 +21,11 @@ were backfilled by hand; sections older than that are dated by commit date.
   the service description shown in system settings.
 - Added `docs/PRIVACY.md` and a Play Protect troubleshooting section to the
   README.
+- The About section in Settings now shows the real app version, derived from the
+  build (`VERSION_NAME` in `gradle.properties`), instead of a hardcoded
+  "Version 1.0". Debug builds append " (debug)".
+- Made the Settings screen scroll so the lower sections are reachable on shorter
+  screens.
 
 ## [1.1.1] - 2026-08-27
 

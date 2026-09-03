@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.rrajath.expander.BuildConfig
 import com.rrajath.expander.R
 import com.rrajath.expander.service.TextExpansionService
 import com.rrajath.expander.ui.components.AccessibilityDisclosureDialog
@@ -272,7 +273,8 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Version 1.0",
+                        text = "Version " + BuildConfig.BASE_VERSION_NAME +
+                            if (BuildConfig.DEBUG) " (debug)" else "",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )

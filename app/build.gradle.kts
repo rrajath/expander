@@ -29,6 +29,11 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
 
+        // Base version without any build-type suffix (debug adds "-debug" to
+        // versionName). The About screen shows this and appends " (debug)" itself
+        // on debug builds.
+        buildConfigField("String", "BASE_VERSION_NAME", "\"$appVersionName\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -83,6 +88,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
