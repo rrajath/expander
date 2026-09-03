@@ -14,8 +14,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rrajath.expander.R
 import com.rrajath.expander.data.Snippet
 import com.rrajath.expander.service.TextExpansionService
 import com.rrajath.expander.ui.components.AccessibilityDisclosureDialog
@@ -39,7 +41,7 @@ fun SnippetListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Expander") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
                         Icon(
