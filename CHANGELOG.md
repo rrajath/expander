@@ -7,6 +7,8 @@ were backfilled by hand; sections older than that are dated by commit date.
 
 ## Unreleased
 
+## [1.2.0] - 2026-09-03
+
 - Added a data-use disclosure for the accessibility service. The first time you
   tap **Enable** on the home banner or **Accessibility Settings** in Settings,
   Expander now shows a dialog explaining what the service can read, why it needs
